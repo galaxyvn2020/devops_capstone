@@ -1,0 +1,68 @@
+version: 2.1
+
+orbs:
+  docker: circleci/docker@2.1.2
+
+
+jobs:
+  install-and-check-lint:
+    docker:
+      - image: python:3.7.3-stretch
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "app/requirements.txt" }}
+            - v1-dependencies-
+      - run:
+          name: Install Dependencies
+          command: |
+            chmod -R +x ./bin/
+            python3 -m venv .devops
+            source .devops/bin/activate
+            make install
+      - save_cache:
+          paths:
+            - ./.devops-capstone
+          key: v1-dependencies-{{ checksum "app/requirements.txt" }}
+      - run:
+          name: Run lint
+          command: |
+            source .devops/bin/activate
+            make lint
+
+  build-and-push-docker-image:
+    docker:
+      - image: cimg/node:13.8.0
+    steps:
+      - checkout
+      - setup_remote_docker:
+          version: 19.03.13
+      - run:
+          name: Build and push docker image
+          command: |
+            export IMAGE_VER=$(<app/version.txt)
+            
+            # Build docker image
+            docker build -t flask-app app
+            
+            # Tag docker image
+            docker tag flask-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
+            docker tag flask-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
+            
+            # Login into docker-hub
+            docker login -u $DOCKER_USERNAME -p $DOCKER_PASS
+            
+            # We publish two images with different version tags: 
+            # - numbered version
+            # - "latest"
+            docker push ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
+            docker push ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
+
+
+workflows:
+  default:
+    jobs:
+      - install-and-check-lint
+      - build-and-push-docker-image:
+          requires: [install-and-check-lint]
