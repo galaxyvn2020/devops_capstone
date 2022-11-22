@@ -89,3 +89,6 @@ workflows:
       - install-and-check-lint
       - build-and-push-docker-image:
           requires: [install-and-check-lint]
+          filters:
+            branches:
+              only: [main]
