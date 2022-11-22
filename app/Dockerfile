@@ -1,20 +1,20 @@
-FROM python:3.7.3-stretch
+FROM python:3.6.8
 
-LABEL author="nhatuyet225@gmail.com"
-
-# Working Directory
+## Step 1:
 WORKDIR /app
 
+## Step 2:
 # Copy source code to working directory
 COPY . /app/
-
+## Step 3:
 # Install packages from requirements.txt
 # hadolint ignore=DL3013
-RUN pip install  --no-cache-dir --upgrade pip && \
-    pip install  --no-cache-dir --trusted-host pypi.python.org -r requirements.txt
+RUN pip install --upgrade pip &&\
+    pip install -r requirements.txt
 
-# Expose port 80
+## Step 4:
 EXPOSE 80
 
-# Run app at container launch
-CMD ["python", "app.py"]
+## Step 5:
+# Run app.py at container launch
+CMD ["python" , "app.py"] 

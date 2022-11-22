@@ -12,18 +12,19 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "app/requirements.txt" }}
+            - v1-dependencies-{{ checksum "requirements.txt" }}
             - v1-dependencies-
       - run:
           name: Install Dependencies
           command: |
-            chmod -R +x ./bin/
             python3 -m venv .devops
             source .devops/bin/activate
-            make install
+          # Install hadolint
+            wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64 &&\
+chmod +x /bin/hadolint
       - save_cache:
           paths:
-            - ./.devops-capstone
+            - ./.devops
           key: v1-dependencies-{{ checksum "app/requirements.txt" }}
       - run:
           name: Run lint
@@ -44,11 +45,11 @@ jobs:
             export IMAGE_VER=$(<app/version.txt)
             
             # Build docker image
-            docker build -t flask-app app
+            docker build -t capstone-app app
             
             # Tag docker image
-            docker tag flask-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
-            docker tag flask-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
+            docker tag capstone-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
+            docker tag capstone-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
             
             # Login into docker-hub
             docker login -u $DOCKER_USERNAME -p $DOCKER_PASS
