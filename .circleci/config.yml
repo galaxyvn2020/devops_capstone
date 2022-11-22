@@ -61,7 +61,7 @@ jobs:
             docker push ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
             docker push ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
 
-    deploy-infrastructure:
+  deploy-infrastructure:
     docker:
       - image: python:3.11-rc-alpine
     steps:
