@@ -75,14 +75,6 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            sudo apt-get update && sudo apt-get install -y
-            sudo apt-get install -y curl unzip
-            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-            unzip awscliv2.zip
-            sudo ./aws/install
-      - run:
-          name: Install dependencies
-          command: |
             apk add --update ansible tar curl
             curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.8/2020-09-18/bin/linux/amd64/kubectl
             chmod +x ./kubectl
@@ -93,6 +85,35 @@ jobs:
           name: deploy cluster
           command: |
             eksctl create cluster --name capstone-cluster --region us-east-1 --nodegroup-name capstone-group --nodes 2 --ssh-access --ssh-public-key udacity --managed       
+
+  deploy-config: 
+    docker:
+      - image: 'cimg/base:stable'
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "requirements.txt" }}
+            - v1-dependencies-
+      - setup_remote_docker:
+          version: 20.10.14
+          docker_layer_caching: false
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update && sudo apt-get install -y
+            sudo apt-get install -y curl unzip
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
+      - run:
+          name: set-credential
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set aws_session_token $AWS_SESSION_TOKEN
+            aws configure set region $AWS_DEFAULT_REGION
+      - kubernetes/install-kubectl
 workflows:
   default:
     jobs:
@@ -104,3 +125,5 @@ workflows:
               only: [main]
       - deploy-infrastructure:
           requires: [build-and-push-docker-image]
+      - deploy-config:
+          requires: [deploy-infrastructure]
