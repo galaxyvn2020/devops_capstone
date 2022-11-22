@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: capstone-proj
+  labels:
+    app: capstone-proj
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: capstone-proj
+  template:
+    metadata:
+      labels:
+        app: capstone-proj
+    spec:
+      containers:
+        - image: niceday2256/capstone-proj:latest
+          name: capstone-proj
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 80
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "1024Mi"
+              cpu: "500m"
+      restartPolicy: Always
