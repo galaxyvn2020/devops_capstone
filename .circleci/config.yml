@@ -104,5 +104,3 @@ workflows:
               only: [main]
       - deploy-infrastructure:
           requires: [build-and-push-docker-image]
-      - deploy-config:
-          requires: [deploy-infrastructure]
