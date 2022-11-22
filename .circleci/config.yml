@@ -12,11 +12,12 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
+            - v1-dependencies-{{ checksum "app/requirements.txt" }}
             - v1-dependencies-
       - run:
           name: install dependencies
           command: |
+            cd app 
             python3 -m venv .devops
             source .devops/bin/activate
             make install
@@ -26,10 +27,11 @@ jobs:
       - save_cache:
           paths:
             - ./.devops
-          key: v1-dependencies-{{ checksum "requirements.txt" }}
+          key: v1-dependencies-{{ checksum "app/requirements.txt" }}
       - run:
           name: Run lint
           command: |
+            cd app
             source .devops/bin/activate
             make lint
 
@@ -43,8 +45,8 @@ jobs:
       - run:
           name: Build and push docker image
           command: |
+            cd app
             export IMAGE_VER=$(<version.txt)
-            
             # Build docker image
             docker build -t capstone-app .
             
@@ -68,8 +70,16 @@ jobs:
       - checkout
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "requirements.txt" }}
+            - v1-dependencies-{{ checksum "app/requirements.txt" }}
             - v1-dependencies-
+      - run:
+          name: Install dependencies
+          command: |
+            sudo apt-get update && sudo apt-get install -y
+            sudo apt-get install -y curl unzip
+            curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+            unzip awscliv2.zip
+            sudo ./aws/install
       - run:
           name: Install dependencies
           command: |
@@ -82,7 +92,7 @@ jobs:
       - run:
           name: deploy cluster
           command: |
-            eksctl create cluster --name cluster-demo --region us-east-1 --nodegroup-name cluster-demo --nodes 2 --ssh-access --ssh-public-key udacity --managed 
+            eksctl create cluster --name capstone-cluster --region us-east-1 --nodegroup-name capstone-group --nodes 2 --ssh-access --ssh-public-key udacity --managed       
 workflows:
   default:
     jobs:
@@ -92,3 +102,7 @@ workflows:
           filters:
             branches:
               only: [main]
+      - deploy-infrastructure:
+          requires: [build-and-push-docker-image]
+      - deploy-config:
+          requires: [deploy-infrastructure]
