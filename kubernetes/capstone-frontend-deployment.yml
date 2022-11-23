@@ -17,14 +17,15 @@ spec:
       containers:
         - image: niceday2256/capstone-proj:latest
           name: capstone-proj
-          imagePullPolicy: Always
+          # imagePullPolicy: Always
           ports:
-          - containerPort: 80
-          resources:
-            requests:
-              memory: "64Mi"
-              cpu: "250m"
-            limits:
-              memory: "1024Mi"
-              cpu: "500m"
-      restartPolicy: Always
+            - name: web
+              containerPort: 80
+      #     resources:
+      #       requests:
+      #         memory: "64Mi"
+      #         cpu: "250m"
+      #       limits:
+      #         memory: "1024Mi"
+      #         cpu: "500m"
+      # restartPolicy: Always
