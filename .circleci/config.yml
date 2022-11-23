@@ -63,18 +63,18 @@ jobs:
             cd app
             export IMAGE_VER=$(<version.txt)
             # Build docker image
-            docker build -t capstone-app .
+            docker build -t ${DOCKER_REPO} .
             
             # Tag docker image
-            docker tag capstone-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
-            docker tag capstone-app ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
+            docker tag ${DOCKER_REPO} ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
+            docker tag ${DOCKER_REPO} ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
             
             # Login into docker-hub
             docker login -u $DOCKER_USERNAME -p $DOCKER_PASS
             
             # We push two images with different version tags: given verision and latest
-            docker push niceday2256/capstone-app:${IMAGE_VER}
-            docker push niceday2256/capstone-app:lastest
+            docker push ${DOCKER_HUB_ID}/${DOCKER_REPO}:${IMAGE_VER}
+            docker push ${DOCKER_HUB_ID}/${DOCKER_REPO}:lastest
 
   deploy-infrastructure:
     docker:
