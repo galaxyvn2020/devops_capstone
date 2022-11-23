@@ -140,7 +140,6 @@ jobs:
           resource-file-path: "kubernetes/capstone-frontend-service.yml"
           resource-name: deployment/capstone-proj
       # - kubernetes/update-container-image:
-      #     get-rollout-status: true
       #     container-image-updates: "capstone-proj=niceday2256/capstone-proj:latest"
       #     resource-name: deployment/capstone-proj
       - destroy-environment:
@@ -168,7 +167,7 @@ jobs:
               echo "Waiting for external IP to be ready: ${EXTERNAL_IP}"
               sleep 10
             done
-            sleep 10
+            sleep 100
             echo "External IP: ${EXTERNAL_IP}"
             curl -s --retry 10 "http://$EXTERNAL_IP/alive" | grep "Hello, World!"
       - destroy-environment:
