@@ -139,7 +139,7 @@ jobs:
           resource-name: deployment/capstone-proj
       - kubernetes/update-container-image:
           get-rollout-status: true
-          container-image-updates: "capstone-frontend=niceday2256/capstone-proj:latest"
+          container-image-updates: "capstone-proj=niceday2256/capstone-proj:latest"
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
   cleanup:
