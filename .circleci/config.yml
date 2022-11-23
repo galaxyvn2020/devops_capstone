@@ -19,6 +19,7 @@ commands:
           command: |
             aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-cluster
             aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-nodegroup-capstone-proj-<<parameters.workflow_id>>
+
 jobs:
   install-and-check-lint:
     docker:
@@ -126,9 +127,10 @@ jobs:
             aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
             aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
             aws configure set region $AWS_DEFAULT_REGION
+            echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"
       - kubernetes/install-kubectl
       - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: capstone-proj
+          cluster-name: capstone-proj-${CIRCLE_WORKFLOW_ID:0:7}
           install-kubectl: true
       - kubernetes/create-or-update-resource:
           get-rollout-status: true
@@ -181,3 +183,5 @@ workflows:
           requires: [build-and-push-docker-image]
       - deploy-config:
           requires: [deploy-infrastructure]
+      - cleanup:
+          requires: [deploy-config]          
