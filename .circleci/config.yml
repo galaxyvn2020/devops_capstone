@@ -18,6 +18,7 @@ commands:
           when: on_fail
           command: |
             aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-cluster
+            aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-nodegroup-capstone-proj-<<parameters.workflow_id>>
 jobs:
   install-and-check-lint:
     docker:
@@ -87,7 +88,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            apk add --update ansible tar curl
+            apk add --update ansible tar curl aws-cli
             curl -o kubectl https://amazon-eks.s3.us-west-2.amazonaws.com/1.18.8/2020-09-18/bin/linux/amd64/kubectl
             chmod +x ./kubectl
             curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
@@ -96,7 +97,7 @@ jobs:
       - run:
           name: deploy cluster
           command: |
-            eksctl create cluster --name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --region us-east-1 --nodegroup-name capstone-proj:${CIRCLE_WORKFLOW_ID:0:7} --nodes 1 --ssh-access --ssh-public-key udacity --managed       
+            eksctl create cluster --name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --region us-east-1 --nodegroup-name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --nodes 1 --ssh-access --ssh-public-key udacity --managed       
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}  
   deploy-config: 
@@ -163,6 +164,7 @@ jobs:
               if [[ "${CIRCLE_WORKFLOW_ID:0:7}" =~ "${OldWorkflowID}" ]]
               then
                 aws cloudformation delete-stack --stack-name "eksctl-capstone-proj-${OldWorkflowID}-cluster"
+                aws cloudformation delete-stack --stack-name eksctl-capstone-proj-${OldWorkflowID}-nodegroup-capstone-proj-${OldWorkflowID}
               else
                 echo "Do nothing"
               fi 
