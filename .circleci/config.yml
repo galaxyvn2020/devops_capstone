@@ -17,8 +17,8 @@ commands:
           name: Destroy environments
           when: on_fail
           command: |
-            aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-cluster
             aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-nodegroup-capstone-proj-<<parameters.workflow_id>>
+            aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-cluster
 
 jobs:
   install-and-check-lint:
@@ -141,9 +141,10 @@ jobs:
           get-rollout-status: true
           resource-file-path: "kubernetes/capstone-frontend-service.yml"
           resource-name: deployment/capstone-proj
-      - kubernetes/update-container-image:
-          get-rollout-status: true
-          container-image-updates: "capstone-proj=niceday2256/capstone-proj:latest"
+      # - kubernetes/update-container-image:
+      #     get-rollout-status: true
+      #     container-image-updates: "capstone-proj=niceday2256/capstone-proj:latest"
+      #     resource-name: deployment/capstone-proj
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
   cleanup:
@@ -166,8 +167,8 @@ jobs:
               echo Stack names: "${STACKS[@]}"
               if [[ "${CIRCLE_WORKFLOW_ID:0:7}" =~ "${OldWorkflowID}" ]]
               then
-                aws cloudformation delete-stack --stack-name "eksctl-capstone-proj-${OldWorkflowID}-cluster"
                 aws cloudformation delete-stack --stack-name eksctl-capstone-proj-${OldWorkflowID}-nodegroup-capstone-proj-${OldWorkflowID}
+                aws cloudformation delete-stack --stack-name "eksctl-capstone-proj-${OldWorkflowID}-cluster"
               else
                 echo "Do nothing"
               fi 
