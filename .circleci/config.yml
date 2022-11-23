@@ -95,10 +95,11 @@ jobs:
             curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
             mv /tmp/eksctl /usr/local/bin
             eksctl version
+            echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: deploy cluster
           command: |
-            eksctl create cluster --name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --region us-east-1 --nodegroup-name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --nodes 1 --ssh-access --ssh-public-key udacity --managed       
+            eksctl create cluster --name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --region us-east-1 --nodegroup-name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --nodes 1 --node-type t2.micro --ssh-access --ssh-public-key udacity --managed       
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}  
   deploy-config: 
