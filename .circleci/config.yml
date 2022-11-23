@@ -157,19 +157,19 @@ jobs:
           command: |
             kubectl get pods
             kubectl get services
-            sleep 30
-            # for attempt in {1..20}; do
-            #   EXTERNAL_IP=$(kubectl get service capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} | awk '{print $4}' | tail -n1)
-            #   echo "Checking external IP: ${EXTERNAL_IP}"
-            #   if [ -n "${EXTERNAL_IP}" ] && [ -z $(echo "${EXTERNAL_IP}" | grep "pending") ]; then
-            #     break
-            #   fi
-            #   echo "Waiting for external IP to be ready: ${EXTERNAL_IP}"
-            #   sleep 10
-            # done
-            # sleep 100
-            # echo "External IP: ${EXTERNAL_IP}"
-            # curl -s --retry 10 "http://$EXTERNAL_IP/alive" | grep "Hello, World!"
+            sleep 100
+            for attempt in {1..20}; do
+              EXTERNAL_IP=$(kubectl get service capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} | awk '{print $4}' | tail -n1)
+              echo "Checking external IP: ${EXTERNAL_IP}"
+              if [ -n "${EXTERNAL_IP}" ] && [ -z $(echo "${EXTERNAL_IP}" | grep "pending") ]; then
+                break
+              fi
+              echo "Waiting for external IP to be ready: ${EXTERNAL_IP}"
+              sleep 10
+            done
+            sleep 100
+            echo "External IP: ${EXTERNAL_IP}"
+            curl -s --retry 10 "http://$EXTERNAL_IP/alive" | grep "Hello, World!"
       - destroy-environment:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
   cleanup:
