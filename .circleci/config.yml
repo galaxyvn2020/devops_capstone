@@ -147,32 +147,32 @@ jobs:
           workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
   
   smoke-test:
-      executor: aws-eks/python3
-      steps:
-        - aws-eks/update-kubeconfig-with-authenticator:
-            cluster-name: capstone-proj-${CIRCLE_WORKFLOW_ID:0:7}
-            install-kubectl: true
-            aws-region: ${AWS_DEFAULT_REGION}
-        - run:
-            name: Wait for service to be ready
-            command: |
-              kubectl get pods
-              kubectl get services
-              sleep 30
-              for attempt in {1..20}; do
-                EXTERNAL_IP=$(kubectl get service capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} | awk '{print $4}' | tail -n1)
-                echo "Checking external IP: ${EXTERNAL_IP}"
-                if [ -n "${EXTERNAL_IP}" ] && [ -z $(echo "${EXTERNAL_IP}" | grep "pending") ]; then
-                  break
-                fi
-                echo "Waiting for external IP to be ready: ${EXTERNAL_IP}"
-                sleep 10
-              done
+    executor: aws-eks/python3
+    steps:
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: capstone-proj-${CIRCLE_WORKFLOW_ID:0:7}
+          install-kubectl: true
+          aws-region: ${AWS_DEFAULT_REGION}
+      - run:
+          name: Wait for service to be ready
+          command: |
+            kubectl get pods
+            kubectl get services
+            sleep 30
+            for attempt in {1..20}; do
+              EXTERNAL_IP=$(kubectl get service capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} | awk '{print $4}' | tail -n1)
+              echo "Checking external IP: ${EXTERNAL_IP}"
+              if [ -n "${EXTERNAL_IP}" ] && [ -z $(echo "${EXTERNAL_IP}" | grep "pending") ]; then
+                break
+              fi
+              echo "Waiting for external IP to be ready: ${EXTERNAL_IP}"
               sleep 10
-              echo "External IP: ${EXTERNAL_IP}"
-              curl -s --retry 10 "http://$EXTERNAL_IP/alive" | grep "Hello, World!"
-      - destroy-environment:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+            done
+            sleep 10
+            echo "External IP: ${EXTERNAL_IP}"
+            curl -s --retry 10 "http://$EXTERNAL_IP/alive" | grep "Hello, World!"
+    - destroy-environment:
+        workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
   cleanup:
       docker:
         - image: amazon/aws-cli
