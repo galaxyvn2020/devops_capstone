@@ -5,21 +5,6 @@ orbs:
   aws-eks: circleci/aws-eks@1.1.0
   kubernetes: circleci/kubernetes@1.3
 
-commands:
-  destroy-environment:
-    description: Destroy back-end and front-end cloudformation stacks given a workflow ID.
-    parameters:
-      workflow_id:
-        type: string
-        default: ${CIRCLE_WORKFLOW_ID:0:7}
-    steps:
-      - run:
-          name: Destroy environments
-          when: on_fail
-          command: |
-            aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-nodegroup-capstone-proj-<<parameters.workflow_id>>
-            aws cloudformation delete-stack --stack-name eksctl-capstone-proj-<<parameters.workflow_id>>-cluster
-
 jobs:
   install-and-check-lint:
     docker:
@@ -95,12 +80,11 @@ jobs:
             curl --silent --location "https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" | tar xz -C /tmp
             mv /tmp/eksctl /usr/local/bin
             eksctl version
-            echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"
       - run:
           name: deploy cluster
           command: |
-            eksctl create cluster --name capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} --region us-west-1
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}  
+            eksctl create cluster --name capstone-proj --region us-east-2 --nodegroup-name capstone-proj --nodes 2  --ssh-access --ssh-public-key udacity --managed       
+
   deploy-config: 
     docker:
       - image: 'cimg/base:stable'
@@ -121,6 +105,12 @@ jobs:
             curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
             unzip awscliv2.zip
             sudo ./aws/install
+      - run:
+          name: set-credential
+          command: |
+            aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID
+            aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY
+            aws configure set region $AWS_DEFAULT_REGION
       - kubernetes/install-kubectl
       - aws-eks/update-kubeconfig-with-authenticator:
           cluster-name: capstone-proj-${CIRCLE_WORKFLOW_ID:0:7}
@@ -131,64 +121,11 @@ jobs:
       - kubernetes/create-or-update-resource:
           resource-file-path: "kubernetes/capstone-frontend-service.yml"
           resource-name: deployment/capstone-proj
-      # - kubernetes/update-container-image:
-      #     container-image-updates: "capstone-proj=niceday2256/capstone-proj:latest"
-      #     resource-name: deployment/capstone-proj
-      - destroy-environment:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
+      - kubernetes/update-container-image:
+          container-image-updates: "capstone-proj=niceday2256/capstone-proj:latest"
+          resource-name: deployment/capstone-proj
+
   
-  smoke-test:
-    executor: aws-eks/python3
-    steps:
-      - aws-eks/update-kubeconfig-with-authenticator:
-          cluster-name: capstone-proj-${CIRCLE_WORKFLOW_ID:0:7}
-          install-kubectl: true
-          aws-region: ${AWS_DEFAULT_REGION}
-      - run:
-          name: Wait for service to be ready
-          command: |
-            kubectl get pods
-            kubectl get services
-            sleep 100
-            for attempt in {1..20}; do
-              EXTERNAL_IP=$(kubectl get service capstone-proj-${CIRCLE_WORKFLOW_ID:0:7} | awk '{print $4}' | tail -n1)
-              echo "Checking external IP: ${EXTERNAL_IP}"
-              if [ -n "${EXTERNAL_IP}" ] && [ -z $(echo "${EXTERNAL_IP}" | grep "pending") ]; then
-                break
-              fi
-              echo "Waiting for external IP to be ready: ${EXTERNAL_IP}"
-              sleep 10
-            done
-            sleep 100
-            echo "External IP: ${EXTERNAL_IP}"
-            curl -s --retry 10 "http://$EXTERNAL_IP/alive" | grep "Hello, World!"
-      - destroy-environment:
-          workflow_id: ${CIRCLE_WORKFLOW_ID:0:7}
-  cleanup:
-      docker:
-        - image: amazon/aws-cli
-      steps:
-        - checkout
-        - run:
-            name: Get old stack workflow id && Remove old stacks and files
-            command: |
-              # your code here
-              export OldWorkflowID=$(aws cloudformation \
-                list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
-                --no-paginate --output text)
-              echo OldWorkflowID: "${OldWorkflowID}"
-              echo CIRCLE_WORKFLOW_ID: "${CIRCLE_WORKFLOW_ID:0:7}"
-              # Fetch the stack names          
-              export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
-                --stack-status-filter CREATE_COMPLETE --no-paginate --output text)) 
-              echo Stack names: "${STACKS[@]}"
-              if [[ "${CIRCLE_WORKFLOW_ID:0:7}" =~ "${OldWorkflowID}" ]]
-              then
-                aws cloudformation delete-stack --stack-name eksctl-capstone-proj-${OldWorkflowID}-nodegroup-capstone-proj-${OldWorkflowID}
-                aws cloudformation delete-stack --stack-name "eksctl-capstone-proj-${OldWorkflowID}-cluster"
-              else
-                echo "Do nothing"
-              fi 
 workflows:
   default:
     jobs:
@@ -202,7 +139,4 @@ workflows:
           requires: [build-and-push-docker-image]
       - deploy-config:
           requires: [deploy-infrastructure]
-      - smoke-test:
-          requires: [deploy-config]
-      - cleanup:
-          requires: [smoke-test]          
+     
